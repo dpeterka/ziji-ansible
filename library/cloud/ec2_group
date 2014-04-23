@@ -106,13 +106,15 @@ def addRulesToLookup(rules, prefix, dict):
                                         grant.group_id, grant.cidr_ip)] = rule
 
 
-def get_target_from_rule(rule, name, groups):
+def get_target_from_rule(rule, name, groups, module, ec2):
     """
     Returns tuple of (group_id, ip) after validating rule params.
 
     rule: Dict describing a rule.
     name: Name of the security group being managed.
     groups: Dict of all available security groups.
+    module: the ansible module
+    ec2: the ec2 connection
 
     AWS accepts an ip range or a security group as target of a rule. This
     function validate the rule specification and return either a non-None
@@ -143,7 +145,7 @@ def get_target_from_rule(rule, name, groups):
             if not rule.get('group_desc', '').strip():
                 module.fail_json(msg="group %s will be automatically created by rule %s and no description was provided" % (group_name, rule))
             if not module.check_mode:
-                auto_group = ec2.create_security_group(group_name, rule['group_desc'], vpc_id=vpc_id)
+                auto_group = ec2.create_security_group(group_name, rule['group_desc'], vpc_id= module.params[ 'vpc_id' ] )
                 group_id = auto_group.id
                 groups[group_id] = auto_group
                 groups[group_name] = auto_group
@@ -245,7 +247,7 @@ def main():
         # Now, go through all provided rules and ensure they are there.
         if rules:
             for rule in rules:
-                group_id, ip, target_group_created = get_target_from_rule(rule, name, groups)
+                group_id, ip, target_group_created = get_target_from_rule(rule, name, groups, module, ec2 )
                 if target_group_created:
                     changed = True
 
@@ -285,7 +287,7 @@ def main():
         # Now, go through all provided rules and ensure they are there.
         if rules_egress:
             for rule in rules_egress:
-                group_id, ip, target_group_created = get_target_from_rule(rule, name, groups)
+                group_id, ip, target_group_created = get_target_from_rule(rule, name, groups, module, ec2 )
                 if target_group_created:
                     changed = True
 
