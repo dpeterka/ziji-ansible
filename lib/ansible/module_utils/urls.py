@@ -200,6 +200,8 @@ def url_argument_spec():
         http_agent = dict(default='ansible-httpget'),
         use_proxy = dict(default='yes', type='bool'),
         validate_certs = dict(default='yes', type='bool'),
+        url_username = dict(required=False),
+        url_password = dict(required=False),
     )
 
 
@@ -247,29 +249,38 @@ def fetch_url(module, url, data=None, headers=None, method=None,
             ssl_handler = SSLValidationHandler(module, hostname, port)
             handlers.append(ssl_handler)
 
-    if parsed[0] != 'ftp' and '@' in parsed[1]:
-        credentials, netloc = parsed[1].split('@', 1)
-        if ':' in credentials:
-            username, password = credentials.split(':', 1)
-        else:
-            username = credentials
-            password = ''
-        parsed = list(parsed)
-        parsed[1] = netloc
+    if parsed[0] != 'ftp':
+        username = module.params.get('url_username', '')
+        if username:
+            password = module.params.get('url_password', '')
+            netloc = parsed[1]
+        elif '@' in parsed[1]:
+            credentials, netloc = parsed[1].split('@', 1)
+            if ':' in credentials:
+                username, password = credentials.split(':', 1)
+            else:
+                username = credentials
+                password = ''
 
-        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        # this creates a password manager
-        passman.add_password(None, netloc, username, password)
-        # because we have put None at the start it will always
-        # use this username/password combination for  urls
-        # for which `theurl` is a super-url
+            parsed = list(parsed)
+            parsed[1] = netloc
 
-        authhandler = urllib2.HTTPBasicAuthHandler(passman)
-        # create the AuthHandler
-        handlers.append(authhandler)
+            # reconstruct url without credentials
+            url = urlparse.urlunparse(parsed)
 
-        #reconstruct url without credentials
-        url = urlparse.urlunparse(parsed)
+        if username:
+            passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+
+            # this creates a password manager
+            passman.add_password(None, netloc, username, password)
+
+            # because we have put None at the start it will always
+            # use this username/password combination for  urls
+            # for which `theurl` is a super-url
+            authhandler = urllib2.HTTPBasicAuthHandler(passman)
+
+            # create the AuthHandler
+            handlers.append(authhandler)
 
     if not use_proxy:
         proxyhandler = urllib2.ProxyHandler({})

@@ -11,7 +11,8 @@ Major features/changes:
 * Accelerate improvements:
   - multiple users can connect with different keys, when `accelerate_multi_key = yes` is specified in the ansible.cfg.
   - daemon lifetime is now based on the time from the last activity, not the time from the daemon's launch.
-* ansible-playbook now accepts --force-handlers to run handlers even if tasks result in failures
+* ansible-playbook now accepts --force-handlers to run handlers even if tasks result in failures.
+* Added VMWare support with the vsphere_guest module.
 
 New Modules:
 
@@ -48,6 +49,7 @@ New Modules:
 * cloud: ec2_asg (configure autoscaling groups)
 * cloud: ec2_scaling_policy
 * cloud: ec2_metric_alarm
+* cloud: vsphere_guest
 
 Other notable changes:
 
@@ -65,6 +67,10 @@ Other notable changes:
 * added ability for module documentation YAML to utilize shared module snippets for common args
 * apt module now accepts "deb" parameter to install local dpkg files
 * regex_replace filter plugin added
+* added an inventory script for Docker
+* added an inventory script for Abiquo
+* the get_url module now accepts url_username and url_password as parameters, so sites which require
+  authentication no longer need to have them embedded in the url
 * ... to be filled in from changelogs ...
 * 
 
