@@ -30,7 +30,6 @@
 # == BEGIN DYNAMICALLY INSERTED CODE ==
 
 MODULE_ARGS = "<<INCLUDE_ANSIBLE_MODULE_ARGS>>"
-MODULE_LANG = "<<INCLUDE_ANSIBLE_MODULE_LANG>>"
 MODULE_COMPLEX_ARGS = "<<INCLUDE_ANSIBLE_MODULE_COMPLEX_ARGS>>"
 
 BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 1]
@@ -191,8 +190,6 @@ class AnsibleModule(object):
                 if k not in self.argument_spec:
                     self.argument_spec[k] = v
 
-        os.environ['LANG'] = MODULE_LANG
-        os.environ['LC_CTYPE'] = MODULE_LANG
         (self.params, self.args) = self._load_params()
 
         self._legal_inputs = ['CHECKMODE', 'NO_LOG']
@@ -665,39 +662,6 @@ class AnsibleModule(object):
             else:
                 self.fail_json(msg="internal error: do not know how to interpret argument_spec")
 
-    def safe_eval(self, str, locals=None, include_exceptions=False):
-
-        # do not allow method calls to modules
-        if not isinstance(str, basestring):
-            # already templated to a datastructure, perhaps?
-            if include_exceptions:
-                return (str, None)
-            return str
-        if re.search(r'\w\.\w+\(', str):
-            if include_exceptions:
-                return (str, None)
-            return str
-        # do not allow imports
-        if re.search(r'import \w+', str):
-            if include_exceptions:
-                return (str, None)
-            return str
-        try:
-            result = None
-            if not locals:
-                result = eval(str)
-            else:
-                result = eval(str, None, locals)
-            if include_exceptions:
-                return (result, None)
-            else:
-                return result
-        except Exception, e:
-            if include_exceptions:
-                return (str, e)
-            return str
-
-
     def _check_argument_types(self):
         ''' ensure all arguments have the requested type '''
         for (k, v) in self.argument_spec.iteritems():
@@ -1053,8 +1017,14 @@ class AnsibleModule(object):
                 self.cleanup(tmp_dest.name)
                 self.fail_json(msg='Could not replace file: %s to %s: %s' % (src, dest, e))
 
-        if creating and os.getenv("SUDO_USER"):
-            os.chown(dest, os.getuid(), os.getgid())
+        if creating:
+            # make sure the file has the correct permissions
+            # based on the current value of umask
+            umask = os.umask(0)
+            os.umask(umask)
+            os.chmod(dest, 0666 ^ umask)
+            if os.getenv("SUDO_USER"):
+                os.chown(dest, os.getuid(), os.getgid())
 
         if self.selinux_enabled():
             # rename might not preserve context

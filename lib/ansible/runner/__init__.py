@@ -287,14 +287,20 @@ class Runner(object):
     def _compute_environment_string(self, inject=None):
         ''' what environment variables to use when running the command? '''
 
-        if not self.environment:
-            return ""
-        enviro = template.template(self.basedir, self.environment, inject, convert_bare=True)
-        enviro = utils.safe_eval(enviro)
-        if type(enviro) != dict:
-            raise errors.AnsibleError("environment must be a dictionary, received %s" % enviro)
+        default_environment = dict(
+            LANG     = C.DEFAULT_MODULE_LANG,
+            LC_CTYPE = C.DEFAULT_MODULE_LANG,
+        )
+
+        if self.environment:
+            enviro = template.template(self.basedir, self.environment, inject, convert_bare=True)
+            enviro = utils.safe_eval(enviro)
+            if type(enviro) != dict:
+                raise errors.AnsibleError("environment must be a dictionary, received %s" % enviro)
+            default_environment.update(enviro)
+
         result = ""
-        for (k,v) in enviro.iteritems():
+        for (k,v) in default_environment.iteritems():
             result = "%s=%s %s" % (k, pipes.quote(unicode(v)), result)
         return result
 
@@ -345,6 +351,12 @@ class Runner(object):
                                         self.private_key_file)
         delegate['transport'] = this_info.get('ansible_connection', self.transport)
         delegate['sudo_pass'] = this_info.get('ansible_sudo_pass', self.sudo_pass)
+
+        # Last chance to get private_key_file from global variables.
+        # this is usefull if delegated host is not defined in the inventory
+        if delegate['private_key_file'] is None:
+            delegate['private_key_file'] = remote_inject.get(
+                'ansible_ssh_private_key_file', None)
 
         if delegate['private_key_file'] is not None:
             delegate['private_key_file'] = os.path.expanduser(delegate['private_key_file'])
