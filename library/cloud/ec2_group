@@ -1,6 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+'''
+TODO:
+    implement changes dict...
+    pass changes dict to exit_json.
+DONE    get it to print out group name INSTEAD OF group id if there is one.
+'''
 
 DOCUMENTATION = '''
 ---
@@ -182,6 +188,7 @@ def main():
     state = module.params.get('state')
 
     changed = False
+    changes = dict(created=[],added=[],removed=[])
 
     ec2 = ec2_connect(module)
 
@@ -357,9 +364,12 @@ def main():
                 changed = True
 
     if group:
-        module.exit_json(changed=changed, group_id=group.id)
+        if group.name is not None and group.name != '':
+            module.exit_json(changed=changed, group_name=group.name)
+        else:
+            module.exit_json(changed=changed, group_id=group.id)
     else:
-        module.exit_json(changed=changed, group_id=None)
+        module.exit_json(changed=changed, group_id=None, temp="no group")
 
 # import module snippets
 from ansible.module_utils.basic import *
