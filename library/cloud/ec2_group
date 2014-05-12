@@ -1,12 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
-TODO:
-    implement changes dict...
-    pass changes dict to exit_json.
-DONE    get it to print out group name INSTEAD OF group id if there is one.
-'''
 
 DOCUMENTATION = '''
 ---
@@ -188,7 +182,7 @@ def main():
     state = module.params.get('state')
 
     changed = False
-    changes = dict(created=[],added=[],removed=[])
+    changes = dict(groupsCreated=[],groupsRemoved=[],rulesAdded=[],rulesRemoved=[])
 
     ec2 = ec2_connect(module)
 
@@ -207,6 +201,8 @@ def main():
         if group:
             '''found a match, delete it'''
             try:
+                '''JAMESP I don't think this implements check mode properly...'''
+                changes['groupsRemoved'].append(group.name)
                 group.delete()
             except Exception, e:
                 module.fail_json(msg="Unable to delete security group '%s' - %s" % (group, e))
@@ -243,6 +239,16 @@ def main():
                 # reflected in the object returned by the AWS API
                 # call. We re-read the group for getting an updated object
                 group = ec2.get_all_security_groups(group_ids=(group.id,))[0]
+            else:
+                '''
+                We're in check mode, need to create a 'dummy' group so it goes through the rest of the things
+                '''
+                group = boto.ec2.securitygroup.SecurityGroup(name=name)
+
+                groups[group.id] = group
+                groups[group.name] = group
+
+            changes['groupsCreated'].append(name)
             changed = True
     else:
         module.fail_json(msg="Unsupported state requested: %s" % state)
@@ -268,6 +274,7 @@ def main():
 
                 # If rule already exists, don't later delete it
                 ruleId = "%s-%s-%s-%s-%s-%s" % ('in', rule['proto'], rule['from_port'], rule['to_port'], group_id, ip)
+
                 if ruleId in groupRules:
                     del groupRules[ruleId]
                 # Otherwise, add new rule
@@ -278,6 +285,11 @@ def main():
 
                     if not module.check_mode:
                         group.authorize(rule['proto'], rule['from_port'], rule['to_port'], ip, grantGroup)
+                    if ip is not None:
+                        msg="INGRESS from CIDR: " + str(ip) + ", proto: " + str(rule['proto']) + ", from_port: " + str(rule['from_port']) + ", to_port: " + str(rule['to_port'])
+                    else:
+                        msg="INGRESS from Group: " + str(grantGroup.name) + ", proto: " + str(rule['proto']) + ", from_port: " + str(rule['from_port']) + ", to_port: " + str(rule['to_port'])
+                    changes['rulesAdded'].append(msg)
                     changed = True
 
         # Finally, remove anything left in the groupRules -- these will be defunct rules
@@ -288,13 +300,27 @@ def main():
                     grantGroup = groups[grant.group_id]
                 if not module.check_mode:
                     group.revoke(rule.ip_protocol, rule.from_port, rule.to_port, grant.cidr_ip, grantGroup)
+
+                if grantGroup is not None and grantGroup.name != '':
+                    msg="Ingress rule removed from group: " + str(group.name) + ", source SG: " + str(grantGroup.name) + ", proto: " + str(rule.ip_protocol) + ", from_port: " + str(rule.from_port) + ", to_port: " + str(rule.to_port)
+                else:
+                    msg="Ingress rule removed from group: " + str(group.name) + ", source CIDR: " + str(grant.cidr_ip) + ", proto: " + str(rule.ip_protocol) + ", from_port: " + str(rule.from_port) + ", to_port: " + str(rule.to_port)
+                
+                '''
+                group = boto.ec2.securitygroup.SecurityGroup(name=name)
+
+                groups[group.id] = group
+                groups[group.name] = group
+                '''
+
+                changes['rulesRemoved'].append(msg)
                 changed = True
 
         # Manage egress rules
         groupRules = {}
-#        print groupRules    #EMPTY, which is correct
+
         addRulesToLookup(group.rules_egress, 'out', groupRules)
-#        print groupRules    #with the rule, which is "correct"
+
 
         # Now, go through all provided rules and ensure they are there.
         if rules_egress:
@@ -327,6 +353,13 @@ def main():
                                 src_group_id=grantGroup,
                                 cidr_ip=ip)
                         time.sleep( 1 ) #Adding a sleep in here to give it some time to create the SG.  Not perfect, though.
+
+                    if ip is not None:
+                        msg="EGRESS to CIDR: " + str(ip) + ", proto: " + str(rule['proto']) + ", from_port: " + str(rule['from_port']) + ", to_port: " + str(rule['to_port'])
+                    else:
+                        msg="EGRESS to Group: " + str(group.name) + ", proto: " + str(rule['proto']) + ", from_port: " + str(rule['from_port']) + ", to_port: " + str(rule['to_port'])
+                    changes['rulesAdded'].append(msg)
+
                     changed = True
         elif vpc_id and not module.check_mode:
             # when using a vpc, but no egress rules are specified, 
@@ -344,6 +377,7 @@ def main():
                 )
 
                 time.sleep( 1 ) #Adding a sleep in here to give it some time to create the SG.  Not perfect, though.
+                changes['rulesAdded'].append('default egress group for ' + vpc_id )
                 changed = True
 
         # Finally, remove anything left in the groupRules -- these will be defunct rules
@@ -361,15 +395,30 @@ def main():
                             src_group_id=grantGroup,
                             cidr_ip=grant.cidr_ip)
                     time.sleep( 1 ) #Adding a sleep in here to give it some time to create the SG.  Not perfect, though.
+                msg="Egress rule removed from group: " + str(group.name) + ", proto: " + str(rule.ip_protocol) + ", from_port: " + str(rule.from_port) + ", to_port: " + str(rule.to_port) + ", destination: " + str(grant.cidr_ip)+ ""
+                changes['rulesRemoved'].append(msg)
                 changed = True
+
+    '''
+    Clean up the changes dict, no need to print empty shit
+    '''
+    for changeKey in changes.keys():
+        if len(changes[changeKey]) == 0:
+            del changes[changeKey]
+
+    if not changed:
+        changes = "No changes"
 
     if group:
         if group.name is not None and group.name != '':
-            module.exit_json(changed=changed, group_name=group.name)
+            module.exit_json(changed=changed, check_mode=module.check_mode, group_name=group.name, changes=changes)
         else:
-            module.exit_json(changed=changed, group_id=group.id)
+            module.exit_json(changed=changed, check_mode=module.check_mode, group_id=group.id, changes=changes)
     else:
-        module.exit_json(changed=changed, group_id=None, temp="no group")
+        if name:
+            module.exit_json(changed=changed, check_mode=module.check_mode, group_name=name, changes=changes, temp="no group")
+        else:
+            module.exit_json(changed=changed, check_mode=module.check_mode, group_id=None, changes=changes, temp="no group")
 
 # import module snippets
 from ansible.module_utils.basic import *
