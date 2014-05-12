@@ -504,6 +504,7 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
 
         host_result2 = host_result.copy()
         host_result2.pop('invocation', None)
+        print host_result2
         verbose_always = host_result2.pop('verbose_always', False)
         changed = host_result.get('changed', False)
         ok_or_changed = 'ok'
@@ -522,10 +523,10 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
         else:
             # verbose ...
             if item:
-                msg = "%s: [%s] => (item=%s) => %s" % (ok_or_changed, host, item, utils.jsonify(host_result2, format=verbose_always))
+                msg = "%s: [%s] => (item=%s) => %s" % (ok_or_changed, host, item, utils.jsonify(host_result2, format=True))
             else:
                 if 'ansible_job_id' not in host_result or 'finished' in host_result2:
-                    msg = "%s: [%s] => %s" % (ok_or_changed, host, utils.jsonify(host_result2, format=verbose_always))
+                    msg = "%s: [%s] => %s" % (ok_or_changed, host, utils.jsonify(host_result2, format=True))
 
         if msg != '':
             if not changed:
