@@ -504,7 +504,6 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
 
         host_result2 = host_result.copy()
         host_result2.pop('invocation', None)
-        print host_result2
         verbose_always = host_result2.pop('verbose_always', False)
         changed = host_result.get('changed', False)
         ok_or_changed = 'ok'
