@@ -131,6 +131,17 @@ def get_aws_connection_info(module):
                        aws_secret_access_key=secret_key,
                        security_token=security_token)
 
+    '''
+    I want to pass in the profile name as an env variable
+
+    Should probably make this an argument to ansible, but for now this'll work.
+    '''
+    if not profile_name:
+        if 'BOTO_PROFILE_NAME' in os.environ:
+            profile_name = os.environ[ 'BOTO_PROFILE_NAME' ]
+        else:
+            profile_name = None
+
     # profile_name only works as a key in boto >= 2.24
     # so only set profile_name if passed as an argument
     if profile_name:
