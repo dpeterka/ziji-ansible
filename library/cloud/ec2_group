@@ -145,7 +145,11 @@ def get_target_from_rule(rule, name, groups, module, ec2):
             groups[group_name] = group
         else:
             if not rule.get('group_desc', '').strip():
-                module.fail_json(msg="group %s will be automatically created by rule %s and no description was provided" % (group_name, rule))
+#                module.fail_json(msg="group %s will be automatically created by rule %s and no description was provided" % (group_name, rule))
+                '''
+                Description is required when creating a group
+                '''
+                rule['group_desc'] = group_name
             if not module.check_mode:
                 auto_group = ec2.create_security_group(group_name, rule['group_desc'], vpc_id= module.params[ 'vpc_id' ] )
                 group_id = auto_group.id
