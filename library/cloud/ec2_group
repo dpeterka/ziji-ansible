@@ -156,6 +156,17 @@ def get_target_from_rule(rule, name, groups, module, ec2):
                 groups[group_id] = auto_group
                 groups[group_name] = auto_group
                 time.sleep( 1 ) #Adding a sleep in here to give it some time to create the SG.  Not perfect, though.
+            else:
+                '''
+                We're in check mode, need to create a 'dummy' group so it goes through the rest of the things, also dummy group.id
+                '''
+                group = boto.ec2.securitygroup.SecurityGroup(name=group_name)
+                group_id = "sg-" + group.name
+
+                groups[group_id] = group
+                groups[group.name] = group
+
+
             target_group_created = True
     elif 'cidr_ip' in rule:
         ip = rule['cidr_ip']
