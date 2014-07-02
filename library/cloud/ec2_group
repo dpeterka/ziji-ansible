@@ -140,6 +140,10 @@ def get_target_from_rule(rule, name, groups, module, ec2):
         if group_name in groups:
             group_id = groups[group_name].id
         elif group_name == name:
+            '''
+            following line is causing a problem, group isn't available yet for some reason
+            A group referencing itself is what's causing the problem.  YAY.
+            '''
             group_id = group.id
             groups[group_id] = group
             groups[group_name] = group
@@ -152,6 +156,7 @@ def get_target_from_rule(rule, name, groups, module, ec2):
                 rule['group_desc'] = group_name
             if not module.check_mode:
                 auto_group = ec2.create_security_group(group_name, rule['group_desc'], vpc_id= module.params[ 'vpc_id' ] )
+                time.sleep( 2 )
                 group_id = auto_group.id
                 groups[group_id] = auto_group
                 groups[group_name] = auto_group
@@ -161,13 +166,35 @@ def get_target_from_rule(rule, name, groups, module, ec2):
                 We're in check mode, need to create a 'dummy' group so it goes through the rest of the things, also dummy group.id
                 '''
                 group = boto.ec2.securitygroup.SecurityGroup(name=group_name)
+
+                time.sleep( 2 )  #Seriously... should implement some busy waiting or some such shit
+                '''
+                Ok, I have absolutely ZERO idea why, but if I don't set 'group.id', check mode vomits out with: 
+
+                =======================
+                failed: [localhost] => {"failed": true, "item": "", "parsed": false}
+                invalid output was: Traceback (most recent call last):
+                  File "/Users/jpancoast/.ansible/tmp/ansible-tmp-1404322010.55-259664979251723/ec2_group", line 1805, in <module>
+                    main()
+                  File "/Users/jpancoast/.ansible/tmp/ansible-tmp-1404322010.55-259664979251723/ec2_group", line 310, in main
+                    msg="INGRESS from Group: " + str(grantGroup.name) + ", proto: " + str(rule['proto']) + ", from_port: " + str(rule['from_port']) + ", to_port: " + str(rule['to_port'])
+                AttributeError: 'NoneType' object has no attribute 'name'
+
+
+                FATAL: all hosts have already failed -- aborting
+                =======================
+
+                Even though group_id exists, and we use it as a key here, when we get out of here, groups[group_id] doesn't exist, even though group_id exists aroudn 'INGRESS from GROUP' statement..
+                I'm suspecting it has something to do with passing by reference.  Maybe.
+                '''
+                group.id = "sg-" + group.name
                 group_id = "sg-" + group.name
 
                 groups[group_id] = group
                 groups[group.name] = group
 
-
             target_group_created = True
+
     elif 'cidr_ip' in rule:
         ip = rule['cidr_ip']
 
@@ -216,7 +243,6 @@ def main():
         if group:
             '''found a match, delete it'''
             try:
-                '''JAMESP I don't think this implements check mode properly...'''
                 changes['groupsRemoved'].append(group.name)
                 group.delete()
             except Exception, e:
@@ -260,6 +286,8 @@ def main():
                 '''
                 group = boto.ec2.securitygroup.SecurityGroup(name=name)
 
+                '''Just setting this here for shits and grins'''
+                group.id = "sg-" + group.name
                 groups[group.id] = group
                 groups[group.name] = group
 
