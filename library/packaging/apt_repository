@@ -24,7 +24,7 @@
 DOCUMENTATION = '''
 ---
 module: apt_repository
-short_description: Add and remove APT repositores
+short_description: Add and remove APT repositories
 description:
     - Add or remove an APT repositories in Ubuntu and Debian.
 notes:
@@ -320,6 +320,8 @@ class UbuntuSourcesList(SourcesList):
 
         headers = dict(Accept='application/json')
         response, info = fetch_url(self.module, lp_api, headers=headers)
+        if info['status'] != 200:
+            self.module.fail_json(msg="failed to fetch PPA information, error was: %s" % info['msg'])
         return json.load(response)
 
     def _expand_ppa(self, path):
