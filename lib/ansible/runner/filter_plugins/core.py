@@ -202,6 +202,22 @@ def rand(environment, end, start=None, step=None):
     else:
         raise errors.AnsibleFilterError('random can only be used on sequences and integers')
 
+# Grab specific subnet IDs from the VPC config
+def vpc_subnet(vpc, key, val):
+    found = []
+    for subnet in vpc["subnets"]:
+        if subnet["resource_tags"][key] == val:
+            found.append(subnet["id"])
+
+    return found
+
+# Grab all subnet IDs from the VPC config
+def vpc_subnet_ids(vpc):
+    subnets = []
+    for subnet in vpc["subnets"]:
+        subnets.append(subnet["id"])
+    return subnets
+
 class FilterModule(object):
     ''' Ansible core jinja2 filters '''
 
@@ -271,5 +287,9 @@ class FilterModule(object):
 
             # random numbers
             'random': rand,
+
+            # ec2 vpc hackery
+            'vpc_subnet': vpc_subnet,
+            'vpc_subnet_ids': vpc_subnet_ids,
         }
 
