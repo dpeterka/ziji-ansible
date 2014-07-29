@@ -202,6 +202,39 @@ def rand(environment, end, start=None, step=None):
     else:
         raise errors.AnsibleFilterError('random can only be used on sequences and integers')
 
+# Grab specific subnet IDs from the VPC config
+def vpc_subnet(vpc, key, val):
+    found = []
+    for subnet in vpc["subnets"]:
+        if subnet["resource_tags"][key] == val:
+            found.append(subnet["id"])
+    return found
+
+# Grab all subnet IDs from the VPC config
+def vpc_subnet_ids(vpc):
+    subnets = []
+    for subnet in vpc["subnets"]:
+        subnets.append(subnet["id"])
+    return subnets
+
+# Retrieve the ID for the given Tier & AZ
+def vpc_subnet_in_az(vpc, tier, az):
+    for subnet in vpc["subnets"]:
+        if subnet["resource_tags"]["Tier"] == tier and subnet["az"] == az:
+            return subnet["id"]
+    raise errors.AnsibleFilterError("Unable to locate subnet matching tier=%s && az=%s" % (tier, az))
+
+# Retrieve the CIDR range for the given Tier & AZ
+def vpc_subnet_cidr_in_az(vpc, tier, az):
+    for subnet in vpc["subnets"]:
+        if subnet["resource_tags"]["Tier"] == tier and subnet["az"] == az:
+            return subnet["cidr"]
+    raise errors.AnsibleFilterError("Unable to locate subnet matching tier=%s && az=%s" % (tier, az))
+
+# Get the first element
+def first(list):
+    return list[0]
+
 class FilterModule(object):
     ''' Ansible core jinja2 filters '''
 
@@ -271,5 +304,12 @@ class FilterModule(object):
 
             # random numbers
             'random': rand,
+
+            # ec2 vpc hackery
+            'vpc_subnet': vpc_subnet,
+            'vpc_subnet_ids': vpc_subnet_ids,
+            'vpc_subnet_in_az': vpc_subnet_in_az,
+            'vpc_subnet_cidr_in_az': vpc_subnet_cidr_in_az,
+            'first': first,
         }
 
