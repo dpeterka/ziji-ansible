@@ -384,6 +384,11 @@ def main():
                     rule['proto'] = -1
                     rule['from_port'] = None
                     rule['to_port'] = None
+                elif rule['proto'] == 'deny_all':
+                    # if proto=deny_all is the only rule in rules_egress, then no rules will be
+                    # added, effectively denying all outbound traffic
+                    continue
+
 
                 # If rule already exists, don't later delete it
                 ruleId = "%s-%s-%s-%s-%s-%s" % ('out', rule['proto'], rule['from_port'], rule['to_port'], group_id, ip)
