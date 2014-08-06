@@ -109,8 +109,7 @@ def addRulesToLookup(rules, prefix, dict):
 
 
 
-#JAMESP def get_target_from_rule(rule, name, groups, module, ec2):
-def get_target_from_rule(module, rule, name, group, groups):
+def get_target_from_rule(module, ec2, rule, name, group, groups, vpc_id):
     """
     Returns tuple of (group_id, ip) after validating rule params.
 
@@ -312,12 +311,11 @@ def main():
         # Now, go through all provided rules and ensure they are there.
         if rules:
             for rule in rules:
-#JAMESP                 group_id, ip, target_group_created = get_target_from_rule(rule, name, groups, module, ec2 )
-                group_id, ip, target_group_created = get_target_from_rule(module, rule, name, group, groups)
+                group_id, ip, target_group_created = get_target_from_rule(module, ec2, rule, name, group, groups, vpc_id)
                 if target_group_created:
                     changed = True
 
-                if rule['proto'] == 'all' or rule['proto'] == '-1':
+                if rule['proto'] in ('all', '-1', -1):
                     rule['proto'] = -1
                     rule['from_port'] = None
                     rule['to_port'] = None
@@ -375,12 +373,11 @@ def main():
         # Now, go through all provided rules and ensure they are there.
         if rules_egress:
             for rule in rules_egress:
-#JAMESP                 group_id, ip, target_group_created = get_target_from_rule(rule, name, groups, module, ec2 )
-                group_id, ip, target_group_created = get_target_from_rule(module, rule, name, group, groups)
+                group_id, ip, target_group_created = get_target_from_rule(module, ec2, rule, name, group, groups, vpc_id)
                 if target_group_created:
                     changed = True
 
-                if rule['proto'] == 'all' or rule['proto'] == '-1':
+                if rule['proto'] in ('all', '-1', -1):
                     rule['proto'] = -1
                     rule['from_port'] = None
                     rule['to_port'] = None
@@ -422,8 +419,11 @@ def main():
             # we add in a default allow all out rule, which was the
             # default behavior before egress rules were added
 
-
-#JAMESP             if 'out--1-None-None-None-0.0.0.0/0' not in groupRules:
+            '''
+            JAMESP Note: I dinna think this works as they want it too.  What we really need to do is check if groupRules is empty, then only add 
+                default all/all egress if it's empty
+            '''
+            
             default_egress_rule = 'out--1-None-None-None-0.0.0.0/0'
             if default_egress_rule not in groupRules:
 

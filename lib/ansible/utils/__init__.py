@@ -29,7 +29,7 @@ from ansible import __version__
 from ansible.utils.display_functions import *
 from ansible.utils.plugins import *
 from ansible.callbacks import display
-from ansible.utils.splitter import split_args, unquote
+from ansible.module_utils.splitter import split_args, unquote
 import ansible.constants as C
 import ast
 import time
@@ -694,8 +694,6 @@ def parse_kv(args):
     ''' convert a string of key/value items to a dict '''
     options = {}
     if args is not None:
-        # attempting to split a unicode here does bad things
-        args = args.encode('utf-8')
         try:
             vargs = split_args(args)
         except ValueError, ve:
@@ -703,11 +701,10 @@ def parse_kv(args):
                 raise errors.AnsibleError("error parsing argument string, try quoting the entire line.")
             else:
                 raise
-        vargs = [x.decode('utf-8') for x in vargs]
         for x in vargs:
             if "=" in x:
                 k, v = x.split("=",1)
-                options[k] = unquote(v)
+                options[k] = unquote(v.strip())
     return options
 
 def merge_hash(a, b):
@@ -1041,11 +1038,11 @@ def filter_leading_non_json_lines(buf):
     filter only leading lines since multiline JSON is valid.
     '''
 
-    kv_regex = re.compile(r'.*\w+=\w+.*')
+    kv_regex = re.compile(r'\w=\w')
     filtered_lines = StringIO.StringIO()
     stop_filtering = False
     for line in buf.splitlines():
-        if stop_filtering or kv_regex.match(line) or line.startswith('{') or line.startswith('['):
+        if stop_filtering or line.startswith('{') or line.startswith('[') or kv_regex.search(line):
             stop_filtering = True
             filtered_lines.write(line + '\n')
     return filtered_lines.getvalue()
@@ -1260,7 +1257,10 @@ def listify_lookup_plugin_terms(terms, basedir, inject):
         #    with_items: {{ alist }}
 
         stripped = terms.strip()
-        if not (stripped.startswith('{') or stripped.startswith('[')) and not stripped.startswith("/") and not stripped.startswith('set(['):
+        if not (stripped.startswith('{') or stripped.startswith('[')) and \
+           not stripped.startswith("/") and \
+           not stripped.startswith('set([') and \
+           not LOOKUP_REGEX.search(terms):
             # if not already a list, get ready to evaluate with Jinja2
             # not sure why the "/" is in above code :)
             try:
