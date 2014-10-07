@@ -420,10 +420,9 @@ def main():
             # default behavior before egress rules were added
 
             '''
-            JAMESP Note: I dinna think this works as they want it too.  What we really need to do is check if groupRules is empty, then only add 
-                default all/all egress if it's empty
-            '''
-            
+            jpancoast@ziji-media.com 
+                10/7/2014 Commented this block out because we don't want this default behavior anymore.
+
             default_egress_rule = 'out--1-None-None-None-0.0.0.0/0'
             if default_egress_rule not in groupRules:
 
@@ -442,6 +441,7 @@ def main():
             else:
                 # make sure the default egress rule is not removed
                 del groupRules[default_egress_rule]
+            '''
 
         # Finally, remove anything left in the groupRules -- these will be defunct rules
         for rule in groupRules.itervalues():
