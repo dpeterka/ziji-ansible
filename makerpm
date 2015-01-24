@@ -9,5 +9,5 @@ if [ -d rpm-build ]; then
 fi
 
 make rpm
-mv rpm-build/*.rpm rpm-build/$name-${pkgVersion}-${rpmVersion}.x86_64.rpm
+cp rpm-build/*.amzn1.noarch.rpm rpm-build/$name-${pkgVersion}-${rpmVersion}.amzn1.noarch.rpm
 

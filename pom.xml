@@ -95,7 +95,7 @@
             <configuration>
               <artifacts>
                 <artifact>
-                  <file>${basedir}/rpm-build/${project.artifactId}-${pkgVersion}-${rpmVersion}.x86_64.rpm</file>
+                  <file>${basedir}/rpm-build/${project.artifactId}-${pkgVersion}-${rpmVersion}.amzn1.noarch.rpm</file>
                   <type>rpm</type>
                   <!-- <classifier>optional</classifier> -->
                 </artifact>
