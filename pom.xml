@@ -1,9 +1,9 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <name>charter-tomcat-rpm</name>
+  <name>charter-ansible-rpm</name>
   <groupId>charterapps</groupId>
-  <artifactId>charter-tomcat</artifactId>
+  <artifactId>charter-ansible</artifactId>
   
   <properties>
     <pkgVersion>${pkgVersion}</pkgVersion>
@@ -70,7 +70,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>${basedir}/buildscripts/makerpm</executable>
+              <executable>${basedir}/makerpm</executable>
           
               <arguments>
                 <argument>${rpmVersion}</argument>
@@ -95,7 +95,7 @@
             <configuration>
               <artifacts>
                 <artifact>
-                  <file>${basedir}/RPMS/${project.artifactId}-${pkgVersion}-${rpmVersion}.x86_64.rpm</file>
+                  <file>${basedir}/rpm-build/${project.artifactId}-${pkgVersion}-${rpmVersion}.x86_64.rpm</file>
                   <type>rpm</type>
                   <!-- <classifier>optional</classifier> -->
                 </artifact>
