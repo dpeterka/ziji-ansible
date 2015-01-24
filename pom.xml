@@ -1,0 +1,110 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <name>charter-tomcat-rpm</name>
+  <groupId>charterapps</groupId>
+  <artifactId>charter-tomcat</artifactId>
+  
+  <properties>
+    <pkgVersion>${pkgVersion}</pkgVersion>
+    <rpmVersion>${rpmVersion}</rpmVersion>
+  </properties>
+
+  <version>${pkgVersion}-${rpmVersion}</version>
+  <packaging>pom</packaging>
+  
+
+  
+  <distributionManagement>
+    <repository>
+      <id>charter-applications</id>
+      <name>Charter Advanced Engineering Artifactory</name>
+      <url>http://nexusnpm.dev-charter.net:8081/nexus/content/repositories/charter-applications</url>
+    </repository>
+  </distributionManagement>
+  
+  <repositories>
+    <repository>
+      <id>charter-public</id>
+      <name>Charter Advanced Engineering Artifactory</name>
+      <url>http://nexusnpm.dev-charter.net:8081/nexus/content/repositories/public/</url>
+    </repository>
+  </repositories>
+  
+  <pluginRepositories>
+    <pluginRepository>
+      <id>charter-public</id>
+      <name>Charter Communications Central Repository</name>
+      <url>http://nexusnpm.dev-charter.net:8081/nexus/content/repositories/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+  
+  
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <!--
+        Run makerpm2:
+         - Pass in our pkgVersion (tomcat version) and rpmVersion (increment build number) properties as arguments to the script to  
+           create an RPM file ../RPMS/charter-tomcat-${pkgVersion}-${rpmVersion}.rpm
+      
+        This file will then be attached as a build artifact using build-helper-maven-plugin:attach-artifact 
+        so that it gets deployed when mvn deploy is executed to the charter-applications repository.
+        
+        Note: your ~/.m2/settings.xml must contain credentials for the repos, e.g.:
+        
+            <server>
+              <id>charter-applications</id>
+              <username>im_a_realuser</username>
+              <password>sup3rb2d</password>
+            </server>
+      -->
+      <plugin>
+        <artifactId>exec-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <executions>
+          <execution>
+            <id>Make RPM</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${basedir}/buildscripts/makerpm</executable>
+          
+              <arguments>
+                <argument>${rpmVersion}</argument>
+                <argument>${pkgVersion}</argument>
+              </arguments>
+            
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${basedir}/RPMS/${project.artifactId}-${pkgVersion}-${rpmVersion}.x86_64.rpm</file>
+                  <type>rpm</type>
+                  <!-- <classifier>optional</classifier> -->
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    
+    </plugins>
+  </build>
+</project>

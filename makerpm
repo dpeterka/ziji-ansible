@@ -1,0 +1,13 @@
+#!/bin/bash
+
+name=charter-ansible
+# VERSION=$(cat VERSION)
+
+
+if [ -d rpm-build ]; then
+  rm -rf rpm-build
+fi
+
+make rpm
+mv rpm-build/*.rpm rpm-build/$name-${pkgVersion}-${rpmVersion}.x86_64.rpm
+
