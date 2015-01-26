@@ -1,0 +1,13 @@
+#!/bin/bash
+
+name=charter-ansible
+# VERSION=$(cat VERSION)
+rpmVersion=$BUILD_NUMBER
+
+if [ -d rpm-build ]; then
+  rm -rf rpm-build
+fi
+
+make rpm
+cp rpm-build/*.amzn1.noarch.rpm rpm-build/$name-${pkgVersion}-${rpmVersion}.amzn1.noarch.rpm
+
