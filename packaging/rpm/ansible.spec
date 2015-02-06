@@ -70,8 +70,6 @@ Requires: python-httplib2
 Requires: python-setuptools
 %endif
 
-Requires: sshpass
-
 %description
 
 Ansible is a radically simple model-driven configuration management,
