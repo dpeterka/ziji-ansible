@@ -11,7 +11,7 @@ Url:       http://www.ansible.com
 Summary:   SSH-based application deployment, configuration management, and IT orchestration platform
 License:   GPLv3
 Group:     Development/Libraries
-Source:    http://releases.ansible.com/ansible/%{name}-%{version}.tar.gz
+Source:    http://releases.ansible.com/ansible/ansible-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
