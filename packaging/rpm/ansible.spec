@@ -1,4 +1,4 @@
-%define name ansible
+%define name charter-ansible
 
 %if 0%{?rhel} == 5
 %define __python /usr/bin/python26
