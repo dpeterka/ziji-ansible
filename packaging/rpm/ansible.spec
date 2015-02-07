@@ -1,10 +1,10 @@
-%define name ansible
+%define name charter-ansible
 
 %if 0%{?rhel} == 5
 %define __python /usr/bin/python26
 %endif
 
-Name:      charter-%{name}
+Name:      %{name}
 Version:   1.6.1
 Release:   1%{?dist}
 Url:       http://www.ansible.com
@@ -12,7 +12,7 @@ Summary:   SSH-based application deployment, configuration management, and IT or
 License:   GPLv3
 Group:     Development/Libraries
 Source:    http://releases.ansible.com/ansible/ansible-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+BuildRoot: %{_tmppath}/ansible-%{version}-%{release}-buildroot
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 BuildArch: noarch
@@ -79,7 +79,7 @@ on remote nodes. Extension modules can be written in any language and
 are transferred to managed machines automatically.
 
 %prep
-%setup -q
+%setup -q -n ansible-%{version}
 
 %build
 %{__python} setup.py build
