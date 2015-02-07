@@ -1,10 +1,10 @@
-%define name charter-ansible
+%define name ansible
 
 %if 0%{?rhel} == 5
 %define __python /usr/bin/python26
 %endif
 
-Name:      %{name}
+Name:      charter-%{name}
 Version:   1.6.1
 Release:   1%{?dist}
 Url:       http://www.ansible.com
